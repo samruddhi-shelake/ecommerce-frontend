@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import Checkout from "./Checkout";
+import Admin from "./Admin";
 
 const PRODUCT_API = "http://localhost:8082/products";
 const ORDER_API = "http://localhost:8083/orders";
@@ -11,6 +13,7 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   const [cart, setCart] = useState([]);
+  const [showCheckout, setShowCheckout] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -25,6 +28,9 @@ function App() {
       }
 
       const data = await response.json();
+
+      console.log("PRODUCTS FROM API:", data);
+
       setProducts(data);
     } catch (error) {
       console.error("Product API error:", error);
@@ -41,7 +47,10 @@ function App() {
       if (existingProduct) {
         return currentCart.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+              }
             : item
         );
       }
@@ -128,10 +137,35 @@ function App() {
     0
   );
 
+  if (window.location.pathname === "/admin") {
+    return <Admin />;
+  }
+
+  if (window.location.pathname === "/admin/add") {
+    return <Admin />;
+  }
+
+  if (showCheckout) {
+    return (
+      <Checkout
+        cart={cart}
+        cartTotal={cartTotal}
+        onBack={() => setShowCheckout(false)}
+        onOrderSuccess={() => {
+          setCart([]);
+          setShowCheckout(false);
+          setMessage("Order placed successfully!");
+
+          setTimeout(() => {
+            setMessage("");
+          }, 3000);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app">
-
-      {/* NAVBAR */}
 
       <header className="navbar">
 
@@ -140,7 +174,6 @@ function App() {
         </div>
 
         <div className="search-box">
-
           <input
             type="text"
             placeholder="Search for products, brands and more..."
@@ -151,7 +184,6 @@ function App() {
           <button type="button">
             🔍
           </button>
-
         </div>
 
         <nav>
@@ -162,17 +194,26 @@ function App() {
 
         <div className="nav-actions">
 
-          <button type="button" className="account-btn">
+          <button
+            type="button"
+            className="account-btn"
+          >
             👤
             <span>Account</span>
           </button>
 
-          <button type="button" className="wishlist-btn">
+          <button
+            type="button"
+            className="wishlist-btn"
+          >
             ♡
             <span>Wishlist</span>
           </button>
 
-          <a href="#cart" className="cart-btn">
+          <a
+            href="#cart"
+            className="cart-btn"
+          >
             🛒
             <span>Cart</span>
 
@@ -185,26 +226,21 @@ function App() {
 
       </header>
 
-      {/* MESSAGE */}
-
       {message && (
         <div className="message">
           {message}
         </div>
       )}
 
-      {/* CART */}
-
       {cart.length > 0 && (
-        <section className="cart-section" id="cart">
-
+        <section
+          className="cart-section"
+          id="cart"
+        >
           <div className="cart-container">
 
             <div className="cart-header">
-
-              <h2>
-                🛒 My Cart
-              </h2>
+              <h2>🛒 My Cart</h2>
 
               <button
                 type="button"
@@ -212,13 +248,11 @@ function App() {
               >
                 Clear Cart
               </button>
-
             </div>
 
             <div className="cart-items">
 
               {cart.map((item) => (
-
                 <div
                   className="cart-item"
                   key={item.id}
@@ -230,13 +264,9 @@ function App() {
 
                   <div className="cart-item-info">
 
-                    <h3>
-                      {item.name}
-                    </h3>
+                    <h3>{item.name}</h3>
 
-                    <p>
-                      {item.category}
-                    </p>
+                    <p>{item.category}</p>
 
                     <strong>
                       ₹{item.price}
@@ -251,49 +281,40 @@ function App() {
                   <button
                     type="button"
                     className="remove-cart"
-                    onClick={() =>
-                      removeFromCart(item.id)
-                    }
+                    onClick={() => removeFromCart(item.id)}
                   >
                     Remove
                   </button>
 
                 </div>
-
               ))}
 
             </div>
 
             <div className="cart-total">
-
-              <span>
-                Total
-              </span>
+              <span>Total</span>
 
               <strong>
                 ₹{cartTotal}
               </strong>
-
             </div>
 
             <button
               type="button"
               className="checkout-button"
-              onClick={() =>
-                setMessage("Checkout feature coming next!")
-              }
+              onClick={() => setShowCheckout(true)}
             >
               Proceed to Checkout →
             </button>
 
           </div>
-
         </section>
       )}
 
-      {/* HERO */}
-
-      <section className="hero" id="home">
+      <section
+        className="hero"
+        id="home"
+      >
 
         <div className="hero-content">
 
@@ -308,8 +329,9 @@ function App() {
           </h1>
 
           <p>
-            Discover the latest products, amazing deals
-            and everyday essentials — all in one place.
+            Discover the latest products,
+            amazing deals and everyday
+            essentials — all in one place.
           </p>
 
           <a
@@ -325,17 +347,11 @@ function App() {
 
           <div className="hero-offer">
 
-            <span>
-              SALE
-            </span>
+            <span>SALE</span>
 
-            <strong>
-              UP TO
-            </strong>
+            <strong>UP TO</strong>
 
-            <b>
-              50% OFF
-            </b>
+            <b>50% OFF</b>
 
           </div>
 
@@ -351,8 +367,6 @@ function App() {
 
       </section>
 
-      {/* CATEGORIES */}
-
       <section
         className="category-section"
         id="categories"
@@ -360,9 +374,7 @@ function App() {
 
         <div className="section-heading">
 
-          <p>
-            EXPLORE
-          </p>
+          <p>EXPLORE</p>
 
           <h2>
             Shop By Category
@@ -454,8 +466,6 @@ function App() {
 
       </section>
 
-      {/* PRODUCTS */}
-
       <section
         className="products-section"
         id="products"
@@ -465,9 +475,7 @@ function App() {
 
           <div className="section-heading left">
 
-            <p>
-              OUR COLLECTION
-            </p>
+            <p>OUR COLLECTION</p>
 
             <h2>
               {selectedCategory === "All"
@@ -532,9 +540,7 @@ function App() {
 
                   <div className="rating">
                     ⭐ 4.5
-                    <span>
-                      {" "} | 120 Ratings
-                    </span>
+                    <span> | 120 Ratings</span>
                   </div>
 
                   <div className="price-row">
@@ -561,9 +567,7 @@ function App() {
                     <button
                       type="button"
                       className="add-cart"
-                      onClick={() =>
-                        addToCart(product)
-                      }
+                      onClick={() => addToCart(product)}
                     >
                       🛒 Add to Cart
                     </button>
@@ -571,9 +575,7 @@ function App() {
                     <button
                       type="button"
                       className="buy-now"
-                      onClick={() =>
-                        buyNow(product)
-                      }
+                      onClick={() => buyNow(product)}
                     >
                       Buy Now
                     </button>
@@ -590,9 +592,7 @@ function App() {
 
             <div className="no-products">
 
-              <div>
-                🔍
-              </div>
+              <div>🔍</div>
 
               <h3>
                 No products found
@@ -620,85 +620,53 @@ function App() {
 
       </section>
 
-      {/* FEATURES */}
-
       <section className="features">
 
         <div className="feature">
 
-          <span>
-            🚚
-          </span>
+          <span>🚚</span>
 
           <div>
-            <h3>
-              Free Delivery
-            </h3>
-
-            <p>
-              On orders above ₹499
-            </p>
+            <h3>Free Delivery</h3>
+            <p>On orders above ₹499</p>
           </div>
 
         </div>
 
         <div className="feature">
 
-          <span>
-            🔒
-          </span>
+          <span>🔒</span>
 
           <div>
-            <h3>
-              Secure Payments
-            </h3>
-
-            <p>
-              100% secure checkout
-            </p>
+            <h3>Secure Payments</h3>
+            <p>100% secure checkout</p>
           </div>
 
         </div>
 
         <div className="feature">
 
-          <span>
-            ↩️
-          </span>
+          <span>↩️</span>
 
           <div>
-            <h3>
-              Easy Returns
-            </h3>
-
-            <p>
-              Simple return policy
-            </p>
+            <h3>Easy Returns</h3>
+            <p>Simple return policy</p>
           </div>
 
         </div>
 
         <div className="feature">
 
-          <span>
-            💬
-          </span>
+          <span>💬</span>
 
           <div>
-            <h3>
-              24/7 Support
-            </h3>
-
-            <p>
-              We're here to help
-            </p>
+            <h3>24/7 Support</h3>
+            <p>We're here to help</p>
           </div>
 
         </div>
 
       </section>
-
-      {/* FOOTER */}
 
       <footer>
 
@@ -706,9 +674,7 @@ function App() {
 
           <div className="footer-brand">
 
-            <h2>
-              ShopKart
-            </h2>
+            <h2>ShopKart</h2>
 
             <p>
               Your one-stop destination for
@@ -719,9 +685,7 @@ function App() {
 
           <div>
 
-            <h3>
-              Shop
-            </h3>
+            <h3>Shop</h3>
 
             <a href="#products">
               All Products
@@ -739,9 +703,7 @@ function App() {
 
           <div>
 
-            <h3>
-              Customer Care
-            </h3>
+            <h3>Customer Care</h3>
 
             <a href="#home">
               Help Center
@@ -759,21 +721,11 @@ function App() {
 
           <div>
 
-            <h3>
-              Follow Us
-            </h3>
+            <h3>Follow Us</h3>
 
-            <p>
-              Instagram
-            </p>
-
-            <p>
-              Facebook
-            </p>
-
-            <p>
-              Twitter
-            </p>
+            <p>Instagram</p>
+            <p>Facebook</p>
+            <p>Twitter</p>
 
           </div>
 
