@@ -9,7 +9,10 @@ function App() {
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+
   const [cartCount, setCartCount] = useState(0);
+  const [cart, setCart] = useState([]);
+  const [showCart, setShowCart] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -18,11 +21,6 @@ function App() {
   const fetchProducts = async () => {
     try {
       const response = await fetch(PRODUCT_API);
-
-      if (!response.ok) {
-        throw new Error("Product API failed");
-      }
-
       const data = await response.json();
       setProducts(data);
     } catch (error) {
@@ -30,14 +28,20 @@ function App() {
     }
   };
 
+  // ================= ADD TO CART =================
+
   const addToCart = (product) => {
+    setCart((currentCart) => [...currentCart, product]);
     setCartCount((count) => count + 1);
+
     setMessage(product.name + " added to cart!");
 
     setTimeout(() => {
       setMessage("");
     }, 2500);
   };
+
+  // ================= BUY NOW =================
 
   const buyNow = async (product) => {
     const order = {
@@ -70,6 +74,31 @@ function App() {
     }
   };
 
+  // ================= REMOVE FROM CART =================
+
+  const removeFromCart = (index) => {
+    setCart((currentCart) =>
+      currentCart.filter((_, i) => i !== index)
+    );
+
+    setCartCount((count) => Math.max(0, count - 1));
+
+    setMessage("Product removed from cart!");
+
+    setTimeout(() => {
+      setMessage("");
+    }, 2000);
+  };
+
+  // ================= CART TOTAL =================
+
+  const cartTotal = cart.reduce(
+    (total, product) => total + Number(product.price || 0),
+    0
+  );
+
+  // ================= SEARCH + CATEGORY =================
+
   const filteredProducts = products.filter((product) => {
     const searchText = search.toLowerCase();
 
@@ -88,7 +117,7 @@ function App() {
   return (
     <div className="app">
 
-      {/* NAVBAR */}
+      {/* ================= NAVBAR ================= */}
 
       <header className="navbar">
 
@@ -105,7 +134,9 @@ function App() {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <button>🔍</button>
+          <button>
+            🔍
+          </button>
 
         </div>
 
@@ -127,21 +158,152 @@ function App() {
             <span>Wishlist</span>
           </button>
 
-          <button className="cart-btn">
+          <button
+            className="cart-btn"
+            onClick={() => setShowCart(true)}
+          >
             🛒
             <span>Cart</span>
 
             {cartCount > 0 && (
               <b>{cartCount}</b>
             )}
-
           </button>
 
         </div>
 
       </header>
 
-      {/* MESSAGE */}
+      {/* ================= CART PANEL ================= */}
+
+      {showCart && (
+        <div className="cart-overlay">
+
+          <div className="cart-panel">
+
+            <div className="cart-header">
+
+              <h2>
+                🛒 My Cart
+              </h2>
+
+              <button
+                onClick={() => setShowCart(false)}
+              >
+                ✕
+              </button>
+
+            </div>
+
+            {cart.length === 0 ? (
+
+              <div className="empty-cart">
+
+                <div>
+                  🛒
+                </div>
+
+                <h3>
+                  Your cart is empty
+                </h3>
+
+                <p>
+                  Add some products to your cart.
+                </p>
+
+                <button
+                  onClick={() => setShowCart(false)}
+                >
+                  Continue Shopping
+                </button>
+
+              </div>
+
+            ) : (
+
+              <>
+
+                <div className="cart-items">
+
+                  {cart.map((product, index) => (
+
+                    <div
+                      className="cart-item"
+                      key={index}
+                    >
+
+                      <div className="cart-item-image">
+                        🛍️
+                      </div>
+
+                      <div className="cart-item-info">
+
+                        <h3>
+                          {product.name}
+                        </h3>
+
+                        <p>
+                          {product.category || "Product"}
+                        </p>
+
+                        <strong>
+                          ₹{product.price}
+                        </strong>
+
+                      </div>
+
+                      <button
+                        className="remove-cart"
+                        onClick={() =>
+                          removeFromCart(index)
+                        }
+                      >
+                        Remove
+                      </button>
+
+                    </div>
+
+                  ))}
+
+                </div>
+
+                <div className="cart-footer">
+
+                  <div className="cart-total">
+
+                    <span>
+                      Total
+                    </span>
+
+                    <strong>
+                      ₹{cartTotal}
+                    </strong>
+
+                  </div>
+
+                  <button
+                    className="checkout-btn"
+                    onClick={() =>
+                      setMessage(
+                        "Checkout feature coming next!"
+                      )
+                    }
+                  >
+                    Proceed to Checkout →
+                  </button>
+
+                </div>
+
+              </>
+
+            )}
+
+          </div>
+
+        </div>
+      )}
+
+      {/* ================= MESSAGE ================= */}
 
       {message && (
         <div className="message">
@@ -149,9 +311,12 @@ function App() {
         </div>
       )}
 
-      {/* HERO */}
+      {/* ================= HERO ================= */}
 
-      <section className="hero" id="home">
+      <section
+        className="hero"
+        id="home"
+      >
 
         <div className="hero-content">
 
@@ -183,11 +348,17 @@ function App() {
 
           <div className="hero-offer">
 
-            <span>SALE</span>
+            <span>
+              SALE
+            </span>
 
-            <strong>UP TO</strong>
+            <strong>
+              UP TO
+            </strong>
 
-            <b>50% OFF</b>
+            <b>
+              50% OFF
+            </b>
 
           </div>
 
@@ -203,7 +374,7 @@ function App() {
 
       </section>
 
-      {/* CATEGORIES */}
+      {/* ================= CATEGORIES ================= */}
 
       <section
         className="category-section"
@@ -212,7 +383,9 @@ function App() {
 
         <div className="section-heading">
 
-          <p>EXPLORE</p>
+          <p>
+            EXPLORE
+          </p>
 
           <h2>
             Shop By Category
@@ -228,11 +401,21 @@ function App() {
                 ? "category active"
                 : "category"
             }
-            onClick={() => setSelectedCategory("All")}
+            onClick={() =>
+              setSelectedCategory("All")
+            }
           >
-            <span>🛍️</span>
-            <strong>All</strong>
-            <small>View All</small>
+            <span>
+              🛍️
+            </span>
+
+            <strong>
+              All
+            </strong>
+
+            <small>
+              View All
+            </small>
           </button>
 
           <button
@@ -245,9 +428,17 @@ function App() {
               setSelectedCategory("Electronics")
             }
           >
-            <span>💻</span>
-            <strong>Electronics</strong>
-            <small>Latest Gadgets</small>
+            <span>
+              💻
+            </span>
+
+            <strong>
+              Electronics
+            </strong>
+
+            <small>
+              Latest Gadgets
+            </small>
           </button>
 
           <button
@@ -260,9 +451,17 @@ function App() {
               setSelectedCategory("Fashion")
             }
           >
-            <span>👕</span>
-            <strong>Fashion</strong>
-            <small>Trending Styles</small>
+            <span>
+              👕
+            </span>
+
+            <strong>
+              Fashion
+            </strong>
+
+            <small>
+              Trending Styles
+            </small>
           </button>
 
           <button
@@ -275,9 +474,17 @@ function App() {
               setSelectedCategory("Beauty")
             }
           >
-            <span>💄</span>
-            <strong>Beauty</strong>
-            <small>Beauty & Care</small>
+            <span>
+              💄
+            </span>
+
+            <strong>
+              Beauty
+            </strong>
+
+            <small>
+              Beauty & Care
+            </small>
           </button>
 
           <button
@@ -290,16 +497,24 @@ function App() {
               setSelectedCategory("Home")
             }
           >
-            <span>🏠</span>
-            <strong>Home</strong>
-            <small>Home Essentials</small>
+            <span>
+              🏠
+            </span>
+
+            <strong>
+              Home
+            </strong>
+
+            <small>
+              Home Essentials
+            </small>
           </button>
 
         </div>
 
       </section>
 
-      {/* PRODUCTS */}
+      {/* ================= PRODUCTS ================= */}
 
       <section
         className="products-section"
@@ -310,7 +525,9 @@ function App() {
 
           <div className="section-heading left">
 
-            <p>OUR COLLECTION</p>
+            <p>
+              OUR COLLECTION
+            </p>
 
             <h2>
               {selectedCategory === "All"
@@ -371,8 +588,13 @@ function App() {
                   </p>
 
                   <div className="rating">
+
                     ⭐ 4.5
-                    <span> | 120 Ratings</span>
+
+                    <span>
+                      {" "} | 120 Ratings
+                    </span>
+
                   </div>
 
                   <div className="price-row">
@@ -382,7 +604,10 @@ function App() {
                     </strong>
 
                     <span className="old-price">
-                      ₹{Math.round(product.price * 1.15)}
+                      ₹
+                      {Math.round(
+                        product.price * 1.15
+                      )}
                     </span>
 
                     <span className="discount">
@@ -423,7 +648,9 @@ function App() {
 
             <div className="no-products">
 
-              <div>🔍</div>
+              <div>
+                🔍
+              </div>
 
               <h3>
                 No products found
@@ -450,49 +677,93 @@ function App() {
 
       </section>
 
-      {/* FEATURES */}
+      {/* ================= FEATURES ================= */}
 
       <section className="features">
 
         <div className="feature">
-          <span>🚚</span>
+
+          <span>
+            🚚
+          </span>
 
           <div>
-            <h3>Free Delivery</h3>
-            <p>On orders above ₹499</p>
+
+            <h3>
+              Free Delivery
+            </h3>
+
+            <p>
+              On orders above ₹499
+            </p>
+
           </div>
+
         </div>
 
         <div className="feature">
-          <span>🔒</span>
+
+          <span>
+            🔒
+          </span>
 
           <div>
-            <h3>Secure Payments</h3>
-            <p>100% secure checkout</p>
+
+            <h3>
+              Secure Payments
+            </h3>
+
+            <p>
+              100% secure checkout
+            </p>
+
           </div>
+
         </div>
 
         <div className="feature">
-          <span>↩️</span>
+
+          <span>
+            ↩️
+          </span>
 
           <div>
-            <h3>Easy Returns</h3>
-            <p>Simple return policy</p>
+
+            <h3>
+              Easy Returns
+            </h3>
+
+            <p>
+              Simple return policy
+            </p>
+
           </div>
+
         </div>
 
         <div className="feature">
-          <span>💬</span>
+
+          <span>
+            💬
+          </span>
 
           <div>
-            <h3>24/7 Support</h3>
-            <p>We're here to help</p>
+
+            <h3>
+              24/7 Support
+            </h3>
+
+            <p>
+              We're here to help
+            </p>
+
           </div>
+
         </div>
 
       </section>
 
-      {/* FOOTER */}
+      {/* ================= FOOTER ================= */}
 
       <footer>
 
@@ -500,7 +771,9 @@ function App() {
 
           <div className="footer-brand">
 
-            <h2>ShopKart</h2>
+            <h2>
+              ShopKart
+            </h2>
 
             <p>
               Your one-stop destination for
@@ -510,7 +783,10 @@ function App() {
           </div>
 
           <div>
-            <h3>Shop</h3>
+
+            <h3>
+              Shop
+            </h3>
 
             <a href="#products">
               All Products
@@ -527,7 +803,10 @@ function App() {
           </div>
 
           <div>
-            <h3>Customer Care</h3>
+
+            <h3>
+              Customer Care
+            </h3>
 
             <a href="#home">
               Help Center
@@ -545,11 +824,21 @@ function App() {
 
           <div>
 
-            <h3>Follow Us</h3>
+            <h3>
+              Follow Us
+            </h3>
 
-            <p>Instagram</p>
-            <p>Facebook</p>
-            <p>Twitter</p>
+            <p>
+              Instagram
+            </p>
+
+            <p>
+              Facebook
+            </p>
+
+            <p>
+              Twitter
+            </p>
 
           </div>
 
