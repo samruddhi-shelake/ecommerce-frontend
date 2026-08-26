@@ -10,9 +10,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const [cartCount, setCartCount] = useState(0);
   const [cart, setCart] = useState([]);
-  const [showCart, setShowCart] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -21,27 +19,54 @@ function App() {
   const fetchProducts = async () => {
     try {
       const response = await fetch(PRODUCT_API);
+
+      if (!response.ok) {
+        throw new Error("Product API failed");
+      }
+
       const data = await response.json();
       setProducts(data);
     } catch (error) {
       console.error("Product API error:", error);
+      setProducts([]);
     }
   };
 
-  // ================= ADD TO CART =================
-
   const addToCart = (product) => {
-    setCart((currentCart) => [...currentCart, product]);
-    setCartCount((count) => count + 1);
+    setCart((currentCart) => {
+      const existingProduct = currentCart.find(
+        (item) => item.id === product.id
+      );
 
-    setMessage(product.name + " added to cart!");
+      if (existingProduct) {
+        return currentCart.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+
+      return [
+        ...currentCart,
+        {
+          ...product,
+          quantity: 1,
+        },
+      ];
+    });
+
+    setMessage(`${product.name} added to cart!`);
 
     setTimeout(() => {
       setMessage("");
     }, 2500);
   };
 
-  // ================= BUY NOW =================
+  const removeFromCart = (productId) => {
+    setCart((currentCart) =>
+      currentCart.filter((item) => item.id !== productId)
+    );
+  };
 
   const buyNow = async (product) => {
     const order = {
@@ -74,38 +99,17 @@ function App() {
     }
   };
 
-  // ================= REMOVE FROM CART =================
-
-  const removeFromCart = (index) => {
-    setCart((currentCart) =>
-      currentCart.filter((_, i) => i !== index)
-    );
-
-    setCartCount((count) => Math.max(0, count - 1));
-
-    setMessage("Product removed from cart!");
-
-    setTimeout(() => {
-      setMessage("");
-    }, 2000);
-  };
-
-  // ================= CART TOTAL =================
-
-  const cartTotal = cart.reduce(
-    (total, product) => total + Number(product.price || 0),
-    0
-  );
-
-  // ================= SEARCH + CATEGORY =================
-
   const filteredProducts = products.filter((product) => {
     const searchText = search.toLowerCase();
 
+    const productName = product.name?.toLowerCase() || "";
+    const description = product.description?.toLowerCase() || "";
+    const category = product.category?.toLowerCase() || "";
+
     const matchesSearch =
-      product.name?.toLowerCase().includes(searchText) ||
-      product.description?.toLowerCase().includes(searchText) ||
-      product.category?.toLowerCase().includes(searchText);
+      productName.includes(searchText) ||
+      description.includes(searchText) ||
+      category.includes(searchText);
 
     const matchesCategory =
       selectedCategory === "All" ||
@@ -114,10 +118,20 @@ function App() {
     return matchesSearch && matchesCategory;
   });
 
+  const cartTotal = cart.reduce(
+    (total, item) => total + Number(item.price) * item.quantity,
+    0
+  );
+
+  const cartCount = cart.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+
   return (
     <div className="app">
 
-      {/* ================= NAVBAR ================= */}
+      {/* NAVBAR */}
 
       <header className="navbar">
 
@@ -134,7 +148,7 @@ function App() {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <button>
+          <button type="button">
             🔍
           </button>
 
@@ -148,38 +162,43 @@ function App() {
 
         <div className="nav-actions">
 
-          <button className="account-btn">
+          <button type="button" className="account-btn">
             👤
             <span>Account</span>
           </button>
 
-          <button className="wishlist-btn">
+          <button type="button" className="wishlist-btn">
             ♡
             <span>Wishlist</span>
           </button>
 
-          <button
-            className="cart-btn"
-            onClick={() => setShowCart(true)}
-          >
+          <a href="#cart" className="cart-btn">
             🛒
             <span>Cart</span>
 
             {cartCount > 0 && (
               <b>{cartCount}</b>
             )}
-          </button>
+          </a>
 
         </div>
 
       </header>
 
-      {/* ================= CART PANEL ================= */}
+      {/* MESSAGE */}
 
-      {showCart && (
-        <div className="cart-overlay">
+      {message && (
+        <div className="message">
+          {message}
+        </div>
+      )}
 
-          <div className="cart-panel">
+      {/* CART */}
+
+      {cart.length > 0 && (
+        <section className="cart-section" id="cart">
+
+          <div className="cart-container">
 
             <div className="cart-header">
 
@@ -188,135 +207,93 @@ function App() {
               </h2>
 
               <button
-                onClick={() => setShowCart(false)}
+                type="button"
+                onClick={() => setCart([])}
               >
-                ✕
+                Clear Cart
               </button>
 
             </div>
 
-            {cart.length === 0 ? (
+            <div className="cart-items">
 
-              <div className="empty-cart">
+              {cart.map((item) => (
 
-                <div>
-                  🛒
-                </div>
-
-                <h3>
-                  Your cart is empty
-                </h3>
-
-                <p>
-                  Add some products to your cart.
-                </p>
-
-                <button
-                  onClick={() => setShowCart(false)}
+                <div
+                  className="cart-item"
+                  key={item.id}
                 >
-                  Continue Shopping
-                </button>
 
-              </div>
+                  <div className="cart-item-image">
+                    🛍️
+                  </div>
 
-            ) : (
+                  <div className="cart-item-info">
 
-              <>
+                    <h3>
+                      {item.name}
+                    </h3>
 
-                <div className="cart-items">
-
-                  {cart.map((product, index) => (
-
-                    <div
-                      className="cart-item"
-                      key={index}
-                    >
-
-                      <div className="cart-item-image">
-                        🛍️
-                      </div>
-
-                      <div className="cart-item-info">
-
-                        <h3>
-                          {product.name}
-                        </h3>
-
-                        <p>
-                          {product.category || "Product"}
-                        </p>
-
-                        <strong>
-                          ₹{product.price}
-                        </strong>
-
-                      </div>
-
-                      <button
-                        className="remove-cart"
-                        onClick={() =>
-                          removeFromCart(index)
-                        }
-                      >
-                        Remove
-                      </button>
-
-                    </div>
-
-                  ))}
-
-                </div>
-
-                <div className="cart-footer">
-
-                  <div className="cart-total">
-
-                    <span>
-                      Total
-                    </span>
+                    <p>
+                      {item.category}
+                    </p>
 
                     <strong>
-                      ₹{cartTotal}
+                      ₹{item.price}
                     </strong>
 
                   </div>
 
+                  <div className="cart-quantity">
+                    Qty: {item.quantity}
+                  </div>
+
                   <button
-                    className="checkout-btn"
+                    type="button"
+                    className="remove-cart"
                     onClick={() =>
-                      setMessage(
-                        "Checkout feature coming next!"
-                      )
+                      removeFromCart(item.id)
                     }
                   >
-                    Proceed to Checkout →
+                    Remove
                   </button>
 
                 </div>
 
-              </>
+              ))}
 
-            )}
+            </div>
+
+            <div className="cart-total">
+
+              <span>
+                Total
+              </span>
+
+              <strong>
+                ₹{cartTotal}
+              </strong>
+
+            </div>
+
+            <button
+              type="button"
+              className="checkout-button"
+              onClick={() =>
+                setMessage("Checkout feature coming next!")
+              }
+            >
+              Proceed to Checkout →
+            </button>
 
           </div>
 
-        </div>
+        </section>
       )}
 
-      {/* ================= MESSAGE ================= */}
+      {/* HERO */}
 
-      {message && (
-        <div className="message">
-          {message}
-        </div>
-      )}
-
-      {/* ================= HERO ================= */}
-
-      <section
-        className="hero"
-        id="home"
-      >
+      <section className="hero" id="home">
 
         <div className="hero-content">
 
@@ -374,7 +351,7 @@ function App() {
 
       </section>
 
-      {/* ================= CATEGORIES ================= */}
+      {/* CATEGORIES */}
 
       <section
         className="category-section"
@@ -396,29 +373,21 @@ function App() {
         <div className="categories">
 
           <button
+            type="button"
             className={
               selectedCategory === "All"
                 ? "category active"
                 : "category"
             }
-            onClick={() =>
-              setSelectedCategory("All")
-            }
+            onClick={() => setSelectedCategory("All")}
           >
-            <span>
-              🛍️
-            </span>
-
-            <strong>
-              All
-            </strong>
-
-            <small>
-              View All
-            </small>
+            <span>🛍️</span>
+            <strong>All</strong>
+            <small>View All</small>
           </button>
 
           <button
+            type="button"
             className={
               selectedCategory === "Electronics"
                 ? "category active"
@@ -428,20 +397,13 @@ function App() {
               setSelectedCategory("Electronics")
             }
           >
-            <span>
-              💻
-            </span>
-
-            <strong>
-              Electronics
-            </strong>
-
-            <small>
-              Latest Gadgets
-            </small>
+            <span>💻</span>
+            <strong>Electronics</strong>
+            <small>Latest Gadgets</small>
           </button>
 
           <button
+            type="button"
             className={
               selectedCategory === "Fashion"
                 ? "category active"
@@ -451,20 +413,13 @@ function App() {
               setSelectedCategory("Fashion")
             }
           >
-            <span>
-              👕
-            </span>
-
-            <strong>
-              Fashion
-            </strong>
-
-            <small>
-              Trending Styles
-            </small>
+            <span>👕</span>
+            <strong>Fashion</strong>
+            <small>Trending Styles</small>
           </button>
 
           <button
+            type="button"
             className={
               selectedCategory === "Beauty"
                 ? "category active"
@@ -474,20 +429,13 @@ function App() {
               setSelectedCategory("Beauty")
             }
           >
-            <span>
-              💄
-            </span>
-
-            <strong>
-              Beauty
-            </strong>
-
-            <small>
-              Beauty & Care
-            </small>
+            <span>💄</span>
+            <strong>Beauty</strong>
+            <small>Beauty & Care</small>
           </button>
 
           <button
+            type="button"
             className={
               selectedCategory === "Home"
                 ? "category active"
@@ -497,24 +445,16 @@ function App() {
               setSelectedCategory("Home")
             }
           >
-            <span>
-              🏠
-            </span>
-
-            <strong>
-              Home
-            </strong>
-
-            <small>
-              Home Essentials
-            </small>
+            <span>🏠</span>
+            <strong>Home</strong>
+            <small>Home Essentials</small>
           </button>
 
         </div>
 
       </section>
 
-      {/* ================= PRODUCTS ================= */}
+      {/* PRODUCTS */}
 
       <section
         className="products-section"
@@ -560,7 +500,10 @@ function App() {
                     🛍️
                   </div>
 
-                  <button className="wishlist">
+                  <button
+                    type="button"
+                    className="wishlist"
+                  >
                     ♡
                   </button>
 
@@ -588,13 +531,10 @@ function App() {
                   </p>
 
                   <div className="rating">
-
                     ⭐ 4.5
-
                     <span>
                       {" "} | 120 Ratings
                     </span>
-
                   </div>
 
                   <div className="price-row">
@@ -606,7 +546,7 @@ function App() {
                     <span className="old-price">
                       ₹
                       {Math.round(
-                        product.price * 1.15
+                        Number(product.price) * 1.15
                       )}
                     </span>
 
@@ -619,6 +559,7 @@ function App() {
                   <div className="product-buttons">
 
                     <button
+                      type="button"
                       className="add-cart"
                       onClick={() =>
                         addToCart(product)
@@ -628,6 +569,7 @@ function App() {
                     </button>
 
                     <button
+                      type="button"
                       className="buy-now"
                       onClick={() =>
                         buyNow(product)
@@ -661,6 +603,7 @@ function App() {
               </p>
 
               <button
+                type="button"
                 onClick={() => {
                   setSearch("");
                   setSelectedCategory("All");
@@ -677,7 +620,7 @@ function App() {
 
       </section>
 
-      {/* ================= FEATURES ================= */}
+      {/* FEATURES */}
 
       <section className="features">
 
@@ -688,7 +631,6 @@ function App() {
           </span>
 
           <div>
-
             <h3>
               Free Delivery
             </h3>
@@ -696,7 +638,6 @@ function App() {
             <p>
               On orders above ₹499
             </p>
-
           </div>
 
         </div>
@@ -708,7 +649,6 @@ function App() {
           </span>
 
           <div>
-
             <h3>
               Secure Payments
             </h3>
@@ -716,7 +656,6 @@ function App() {
             <p>
               100% secure checkout
             </p>
-
           </div>
 
         </div>
@@ -728,7 +667,6 @@ function App() {
           </span>
 
           <div>
-
             <h3>
               Easy Returns
             </h3>
@@ -736,7 +674,6 @@ function App() {
             <p>
               Simple return policy
             </p>
-
           </div>
 
         </div>
@@ -748,7 +685,6 @@ function App() {
           </span>
 
           <div>
-
             <h3>
               24/7 Support
             </h3>
@@ -756,14 +692,13 @@ function App() {
             <p>
               We're here to help
             </p>
-
           </div>
 
         </div>
 
       </section>
 
-      {/* ================= FOOTER ================= */}
+      {/* FOOTER */}
 
       <footer>
 
